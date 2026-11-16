@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "204d40ca-c5f9-41ed-99e8-2327ed1efcbb",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\kike\\Documents\\t\\21_bit_coffee\\.archify\\architecture-21-bit-coffee-20261111-081618\\candidate.json",
+  "output": "C:\\Users\\kike\\Documents\\t\\21_bit_coffee\\.archify\\architecture-21-bit-coffee-20261111-081618\\21-bit-coffee.html",
+  "specification": {
+    "sha256": "aa989ebf88b8618c3045d26457e2e6d1272f6cd36cf05f463127248ec93f5889",
+    "bytes": 5920
+  },
+  "artifact": {
+    "sha256": "d46ba448a54feccf0607abe5e8d6f33d27c92e9a7a2bb9827225423466c7c26e",
+    "bytes": 854177
+  }
+}

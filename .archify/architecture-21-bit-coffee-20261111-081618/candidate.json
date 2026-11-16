@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "21 Bit Coffee — arquitectura en ejecución",
+    "output": ".archify/architecture-21-bit-coffee-20261111-081618/21-bit-coffee.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "repository": {
+      "url": "https://github.com/kechavez07/21_bit_coffee.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "8932208272ab3a99237fb8aa4eb1d5ba516292f7"
+    }
+  },
+  "components": [
+    { "id": "staff", "type": "external", "label": "Personal", "sublabel": "Cafetería · Pastelería", "pos": [40, 222], "size": [140, 60],
+      "sources": [{ "path": "frontend/src/App.tsx", "line": 32, "end_line": 59, "label": "rutas por rol" }] },
+    { "id": "pwa", "type": "frontend", "label": "PWA React + Vite", "sublabel": "Firebase Web SDK", "pos": [250, 216], "size": [170, 68],
+      "sources": [
+        { "path": "frontend/src/services/firebase/config.ts", "line": 66, "end_line": 80, "label": "init Auth + Firestore" },
+        { "path": "frontend/src/services/firebase/apiClient.ts", "line": 22, "end_line": 45, "label": "callApi con ID token" }
+      ] },
+    { "id": "api", "type": "backend", "label": "API Express", "sublabel": "Render · auth + 6 rutas", "pos": [590, 216], "size": [170, 68], "tag": "restock_requests",
+      "sources": [
+        { "path": "backend/server/index.js", "line": 22, "end_line": 32, "label": "CORS + authenticate" },
+        { "path": "backend/server/src/middleware/auth.js", "line": 18, "end_line": 43, "label": "verifyIdToken + rol" },
+        { "path": "backend/server/src/routes/restockRequests.js", "line": 47, "end_line": 52, "label": "6 rutas POST" }
+      ] },
+    { "id": "firestore", "type": "database", "label": "Cloud Firestore", "sublabel": "catálogo · pedidos · movimientos", "pos": [910, 216], "size": [180, 68],
+      "sources": [
+        { "path": "backend/server/src/lib/restockRequests.js", "line": 263, "end_line": 315, "label": "confirmReceipt (tx)" },
+        { "path": "frontend/src/services/firebase/movements.ts", "line": 84, "end_line": 114, "label": "registerSale (tx)" }
+      ] },
+    { "id": "rules", "type": "security", "label": "Reglas Firestore", "sublabel": "rol en users/{uid}", "pos": [910, 40], "size": [180, 64],
+      "sources": [
+        { "path": "backend/firestore.rules", "line": 46, "end_line": 65, "label": "callerRole + users" },
+        { "path": "backend/firestore.rules", "line": 143, "end_line": 148, "label": "variants" }
+      ] },
+    { "id": "fbauth", "type": "security", "label": "Firebase Auth", "sublabel": "email · ID tokens", "pos": [250, 420], "size": [170, 64],
+      "sources": [
+        { "path": "frontend/src/services/firebase/config.ts", "line": 71, "end_line": 76, "label": "getAuth" },
+        { "path": "backend/server/src/middleware/auth.js", "line": 33, "end_line": 37, "label": "verifyIdToken" }
+      ] },
+    { "id": "fcm", "type": "cloud", "label": "Firebase Cloud Messaging", "sublabel": "push al rol contrario", "pos": [910, 420], "size": [180, 64],
+      "sources": [{ "path": "backend/server/src/lib/notify.js", "line": 58, "end_line": 92, "label": "sendEachForMulticast" }] },
+    { "id": "pushsw", "type": "frontend", "label": "SW de notificaciones", "sublabel": "firebase-messaging-sw.js", "pos": [910, 590], "size": [180, 64],
+      "sources": [
+        { "path": "frontend/public/firebase-messaging-sw.js", "line": 1, "end_line": 39 },
+        { "path": "frontend/src/services/firebase/messaging.ts", "line": 92, "end_line": 96, "label": "register + getToken" }
+      ] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Render · servidor de confianza", "wraps": ["api"] },
+    { "kind": "region", "label": "Firebase · bit-coffee-668f6", "wraps": ["rules", "firestore", "fcm"] }
+  ],
+  "connections": [
+    { "id": "staff-uses-pwa", "from": "staff", "to": "pwa", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "pwa-calls-api", "from": "pwa", "to": "api", "label": "POST + ID token", "variant": "emphasis" },
+    { "id": "api-writes-firestore", "from": "api", "to": "firestore", "label": "Admin SDK (tx)", "variant": "emphasis" },
+    { "id": "pwa-login", "from": "pwa", "to": "fbauth", "label": "login", "variant": "security" },
+    { "id": "api-verifies-token", "from": "api", "to": "fbauth", "label": "verifyIdToken", "variant": "security" },
+    { "id": "pwa-direct-firestore", "from": "pwa", "to": "rules", "label": "onSnapshot · runTransaction" },
+    { "id": "rules-guard-firestore", "from": "rules", "to": "firestore", "label": "permite" },
+    { "id": "api-notifies", "from": "api", "to": "fcm", "label": "notifica", "variant": "dashed" },
+    { "id": "fcm-push", "from": "fcm", "to": "pushsw", "label": "push", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Ruta principal", "items": [
+      "Cafetería crea/edita pedidos; Pastelería los acepta, rechaza y despacha",
+      "La API valida rol y estado y escribe restock_requests con Admin SDK",
+      "confirmReceipt suma el stock despachado en una transacción"
+    ] },
+    { "dot": "rose", "title": "Fronteras de confianza", "items": [
+      "La API exige Bearer ID token y lee el rol de users/{uid}",
+      "Las escrituras con Admin SDK omiten las reglas de Firestore",
+      "Catálogo, ventas y merma van directo desde el cliente, sujetos a reglas"
+    ] },
+    { "dot": "amber", "title": "Hallazgos en este commit", "items": [
+      "catalog.ts llama deleteVariant, pero la API no define esa ruta",
+      "firestore.rules no tiene reglas para sales/merma: caen en deny-all",
+      "users/{uid} es write:false, pero saveFcmToken escribe fcmToken"
+    ] },
+    { "dot": "slate", "title": "Fuera del diagrama", "items": [
+      "backend/functions: respaldo de Cloud Functions sin uso",
+      "Service worker PWA (vite-plugin-pwa) para la app shell"
+    ] }
+  ]
+}
